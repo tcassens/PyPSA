@@ -754,6 +754,7 @@ class OptimizationAbstractMGAMixin:
         dimensions: dict,
         cache_dir: str | None = None,
         mga_extra_functionality: Any = None,
+        extra_functionality: Any = None,
         snapshots: Sequence | None = None,
         multi_investment_periods: bool = False,
         slack: float = 0.05,
@@ -781,6 +782,15 @@ class OptimizationAbstractMGAMixin:
             Signature: mga_extra_functionality(n, snapshots, cache_dir, network_hash, direction_hash, check_only=False).
             When check_only=True, should return bool indicating if outputs exist.
             When check_only=False, should create outputs using the solved network.
+            Defaults to None.
+        extra_functionality : callable | None, optional
+            Optional callback called after `create_model()` but before the
+            near-opt budget constraint and MGA objective are added, i.e. before
+            solving. Signature: extra_functionality(n, snapshots). Use this to
+            add custom constraints to the model built for this MGA direction
+            (e.g. the same `extra_functionality` passed to `n.optimize()` for a
+            normal solve), since MGA otherwise only builds the constraints from
+            `create_model()` plus the near-opt budget constraint.
             Defaults to None.
         snapshots : Sequence | None, optional
             Set of snapshots to consider in the optimization. If None, uses all
@@ -897,6 +907,10 @@ class OptimizationAbstractMGAMixin:
             **model_kwargs,
         )
 
+        # optional caller-supplied constraints
+        if extra_functionality is not None:
+            extra_functionality(self._n, snapshots)
+
         # build budget constraint
         self._n.optimize._add_near_opt_constraint(multi_investment_periods, slack)
 
@@ -945,6 +959,7 @@ class OptimizationAbstractMGAMixin:
         dimensions: dict,
         cache_dir: str | None = None,
         mga_extra_functionality: Any = None,
+        extra_functionality: Any = None,
         snapshots: Sequence | None = None,
         multi_investment_periods: bool = False,
         slack: float = 0.05,
@@ -974,6 +989,7 @@ class OptimizationAbstractMGAMixin:
                 dimensions=dimensions,
                 cache_dir=cache_dir,
                 mga_extra_functionality=mga_extra_functionality,
+                extra_functionality=extra_functionality,
                 snapshots=snapshots,
                 multi_investment_periods=multi_investment_periods,
                 slack=slack,
@@ -1001,6 +1017,7 @@ class OptimizationAbstractMGAMixin:
         dimensions: dict,
         cache_dir: str | None = None,
         mga_extra_functionality: Any = None,
+        extra_functionality: Any = None,
         snapshots: Sequence | None = None,
         multi_investment_periods: bool = False,
         slack: float = 0.05,
@@ -1040,6 +1057,13 @@ class OptimizationAbstractMGAMixin:
             Signature: mga_extra_functionality(n, snapshots, cache_dir, network_hash, direction_hash, check_only=False).
             When check_only=True, should return bool indicating if outputs exist.
             When check_only=False, should create outputs using the solved network.
+            Defaults to None.
+        extra_functionality : callable | None, optional
+            Optional callback called after `create_model()` but before the
+            near-opt budget constraint and MGA objective are added, i.e. before
+            solving, in each direction's worker process. Signature:
+            extra_functionality(n, snapshots). Use this to add custom
+            constraints to the model built for each MGA direction.
             Defaults to None.
         snapshots : Sequence | None, optional
             Set of snapshots to consider in the optimization. If None, uses all
@@ -1153,6 +1177,7 @@ class OptimizationAbstractMGAMixin:
                                     dimensions,
                                     cache_dir,
                                     mga_extra_functionality,
+                                    extra_functionality,
                                     snapshots,
                                     multi_investment_periods,
                                     slack,
